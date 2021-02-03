@@ -25,12 +25,282 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-function NFCTag(data) {
-  this.setData(data);
-  this.authenticated = false;
-  this.backdoor = false;
-  this.tagWritten = false;
-  this.lockedPages = [];
+var ntag = E.compiledC(`
+// void setTagPointer(int)
+// int getTagPointer()
+// void setTagByte(int, int)
+// int getTagByte(int)
+// void setResponsePointer(int)
+// void setAuthenticated(bool)
+// bool getAuthenticated()
+// void setBackdoor(bool)
+// bool getBackdoor()
+// void setTagWritten()
+// bool getTagWritten()
+// bool fixUid()
+// int processRx(int, int)
+
+unsigned char *tag;
+void setTagPointer(unsigned char *pointer){
+  tag = pointer;
+}
+
+int getTagPointer(){
+  return (int)tag;
+}
+
+void setTagByte(int offset, unsigned char value){
+  tag[offset] = value;
+}
+
+unsigned char getTagByte(int offset){
+  return tag[offset];
+}
+
+unsigned char *tx;
+void setResponsePointer(unsigned char *pointer){
+  tx = pointer;
+}
+
+bool authenticated = false;
+void setAuthenticated(bool value){ authenticated = value; }
+bool getAuthenticated(){ return authenticated; }
+
+bool backdoor = false;
+void setBackdoor(bool value){ backdoor = value; }
+bool getBackdoor() { return backdoor; }
+
+bool tagWritten = false;
+void setTagWritten(bool value){ tagWritten = value; }
+bool getTagWritten(){ return tagWritten; }
+
+bool fixUid(){
+  unsigned char bcc0 = tag[0] ^ tag[1] ^ tag[2] ^ 0x88;
+  unsigned char bcc1 = tag[4] ^ tag[5] ^ tag[6] ^ tag[7];
+
+  if (tag[3] != bcc0 || tag[8] != bcc1){
+    tag[3] = bcc0;
+    tag[8] = bcc1;
+
+    return true;
+  }
+
+  return false;
+}
+
+bool isLocked(int page){
+  if (page == 0 || page == 1) return true;
+
+  // Static Lock Bytes
+  int bit;
+  for (bit = 0; bit < 8; bit++){
+    if (tag[11] & (1 << bit)){
+      if ((bit + 8) == page){
+        return true;
+      }
+    }
+
+    if (tag[10] & (1 << bit)){
+      switch (bit){
+        case 0: //BL-CC
+        case 1: //BL-9-4
+        case 2: //BL-15-10
+        case 3: //L-CC
+          break;
+
+        default: {
+          if ((bit + 4) == page){
+            return true;
+          }
+        } break;
+      }
+    }
+  }
+
+  if (!authenticated){
+    if (tag[520] & 0b00000001 > 0 && (page >= 16 && page <= 31))
+      return true;
+
+    if (tag[520] & 0b00000010 > 0 && (page >= 32 && page <= 47))
+      return true;
+
+    if (tag[520] & 0b00000100 > 0 && (page >= 48 && page <= 63))
+      return true;
+
+    if (tag[520] & 0b00001000 > 0 && (page >= 64 && page <= 79))
+      return true;
+
+    if (tag[520] & 0b00010000 > 0 && (page >= 80 && page <= 95))
+      return true;
+
+    if (tag[520] & 0b00100000 > 0 && (page >= 96 && page <= 111))
+      return true;
+
+    if (tag[520] & 0b01000000 > 0 && (page >= 112 && page <= 127))
+      return true;
+
+    if (tag[520] & 0b10000000 > 0 && (page >= 128 && page <= 129))
+      return true;
+  }
+
+  return false;
+}
+
+unsigned char *memcpy(unsigned char *dest_str, unsigned char *src_str, int number){
+  int i;
+
+  for (i = 0; i < number; i++)
+    dest_str[i] = src_str[i];
+
+  return dest_str;
+}
+
+int processRx(int rxLen, unsigned char *rx){
+  if (rxLen == 0){
+    tx[0] = 0;
+    return -1;
+  }
+
+  switch (rx[0]) {
+    case 0x30: { // Read
+      if (rxLen < 2)
+        return 0;
+
+      unsigned char page = rx[1];
+
+      if (backdoor == false && (page < 0 || page > 134)){
+        tx[0] = 0x00;
+        return -1;
+      }
+
+      if (!backdoor && (page == 133 || page == 134)){
+        tx[0] = tx[1] = tx[2] = tx[3] = 0x00;
+        return 4;
+      }
+
+      memcpy(tx, &tag[page * 4], 4);
+      return 4;
+    } break;
+
+    case 0xA2: { // Write
+      if (!backdoor && (rx[1] < 0 || rx[1] > 134 || isLocked(rx[1]))) {
+        tx[0] = 0x00;
+        return -1;
+      }
+
+      if (!backdoor) {
+        if (rx[1] == 2) {
+          tag[10] = tag[10] | rx[4];
+          tag[11] = tag[11] | rx[5];
+          tx[0] = 0x0A;
+
+          return -1;
+        }
+
+        if (rx[1] == 3) {
+          tag[16] = tag[16] | rx[2];
+          tag[17] = tag[17] | rx[3];
+          tag[18] = tag[18] | rx[4];
+          tag[19] = tag[19] | rx[5];
+          tx[0] = 0x0A;
+
+          return -1;
+        }
+
+        if (rx[1] == 130) {
+          // TODO: Dynamic lock bits
+        }
+      }
+
+      int index = rx[1] * 4;
+
+      if ((index > 568) || (!backdoor && index > 536)) {
+        tx[0] = 0x00;
+        return -1;
+      } else {
+        memcpy(&tag[index], &rx[2], 4);
+        tx[0] = 0x0A;
+        return -1;
+      }
+    } break;
+
+    case 0x60: { // Version
+      tx[0] = 0x00;
+      tx[1] = 0x04;
+      tx[2] = 0x04;
+      tx[3] = 0x02;
+      tx[4] = 0x01;
+      tx[5] = 0x00;
+      tx[6] = 0x11;
+      tx[7] = 0x03;
+      return 8;
+    } break;
+
+    case 0x3A: { // Fast Read
+      if (rxLen < 3){
+        tx[0] = 0x00;
+        return -1;
+      }
+
+      if (rx[1] > rx[2] || rx[1] < 0 || rx[2] > 134) {
+        tx[0] = 0x00;
+        return -1;
+      }
+
+      int txLen = (rx[2] - rx[1] + 1) * 4;
+      memcpy(tx, &tag[rx[1] * 4], txLen);
+      return txLen;
+    } break;
+
+    case 0x1B: { // Password Auth
+      authenticated = true;
+      tx[0] = 0x80;
+      tx[1] = 0x80;
+      return 2;
+    } break;
+
+    case 0x3C: { // Read Signature
+      memcpy(tx, &tag[540], 32);
+      return 32;
+    } break;
+
+    case 0x88: { // CUSTOM: Restart NFC
+      return -3;
+    } break;
+
+    case 0x1A: { // Auth
+      return 0;
+    } break;
+
+    case 0x93: { // SEL_REQ CL1
+      tx[0] = 0x04; // ISO14443A_UID0_CT
+      tx[0] = 0xDA;
+      tx[1] = 0x17;
+      return 0;
+    } break;
+
+    default: { // Unknown command
+      tx[0] = 0;
+      return -2;
+    } break;
+  }
+
+  return 0;
+}
+`);
+
+function NFCTag() {
+  this.setData();
+
+  this.responseBuffer = new Uint8Array(572);
+  var respAddr = E.getAddressOf(this.responseBuffer, true);
+  if (!respAddr) throw new Error("Not a Flat String");
+  ntag.setResponsePointer(respAddr);
+
+  ntag.setAuthenticated(false);
+  ntag.setBackdoor(false);
+  ntag.setTagWritten(false);
+
   this.filename = "tag.bin";
   this.led = [LED1];
 
@@ -47,226 +317,72 @@ function NFCTag(data) {
       digitalWrite(self.led[i], 0);
     }
 
-    self.authenticated = false;
-    self.backdoor = false;
+    ntag.setAuthenticated(false);
+    ntag.setBackdoor(false);
 
-    this.lockedPages = self._getLockedPages();
-
-    if (self.tagWritten == true) {
+    if (ntag.getTagWritten() == true) {
       //console.log("Saving tag to flash");
       //require("Storage").write(filename, this._data);
-      self.tagWritten = false;
+      ntag.setTagWritten(false);
     }
 
-    if (self._fixUid()) {
+    if (ntag.fixUid()) {
+      console.log("Fixed tag UID");
       NRF.nfcStop();
       NRF.nfcStart(new Uint8Array([self._data[0], self._data[1], self._data[2], self._data[4], self._data[5], self._data[6], self._data[7]]));
     }
   });
 
   NRF.on('NFCrx', function(rx) {
-    if (rx && self._callbacks[rx[0]]) {
-      self._callbacks[rx[0]](rx, self);
+    var rxAddr = E.getAddressOf(rx, true);
+    if (!rxAddr) throw new Error("RX not a flat string");
+    var txLen = ntag.processRx(rx.length, rxAddr);
+    //console.log(rx);
+    //console.log(txLen);
+
+    if (txLen == 0) {
+      NRF.nfcSend();
+    } else if (txLen == -3) {
+      // Custom command to restart NFC (0x88)
+      self.setData();
+    } else if (txLen == -2) {
+      NRF.nfcSend();
+      // unknown command, log it
+      console.log("Unknown command: 0x" + rx[0].toString(16));
+      console.log(rx);
+    } else if (txLen == -1) {
+      NRF.nfcSend(self.responseBuffer[0]);
     } else {
-      NRF.nfcSend(0);
+      NRF.nfcSend(self.responseBuffer.slice(0, txLen));
     }
   });
 }
 
 NFCTag.prototype = {
-  _fixUid: function() {
-    var bcc0 = this._data[0] ^ this._data[1] ^ this._data[2] ^ 0x88;
-    var bcc1 = this._data[4] ^ this._data[5] ^ this._data[6] ^ this._data[7];
-
-    if (this._data[3] != bcc0 || this._data[8] != bcc1) {
-      this._data[3] = bcc0;
-      this._data[8] = bcc1;
-
-      console.log("Fixed bad bcc");
-
-      return true;
-    }
-
-    return false;
-  },
-  _getLockedPages: function() {
-    var locked = [0, 1];
-
-    // Static Lock Bytes
-    for (var bit = 0; bit < 8; bit++) {
-      if (this._data[11] & (1 << bit)) {
-        locked.push(bit + 8);
-      }
-
-      if (this._data[10] & (1 << bit)) {
-        switch (bit) {
-          case 0: //BL-CC
-          case 1: //BL-9-4
-          case 2: //BL-15-10
-          case 3: //L-CC
-            break;
-
-          default:
-            locked.push(bit + 4);
-        }
-      }
-    }
-
-    if (!this.authenticated) {
-      // Dynamic Lock Bytes
-      if (this._data[520] & 0b00000001 > 0) {
-        locked.push(16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
-      }
-
-      if (this._data[520] & 0b00000010 > 0) {
-        locked.push(32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47);
-      }
-
-      if (this._data[520] & 0b00000100 > 0) {
-        locked.push(48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63);
-      }
-
-      if (this._data[520] & 0b00001000 > 0) {
-        locked.push(64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79);
-      }
-
-      if (this._data[520] & 0b00010000 > 0) {
-        locked.push(80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95);
-      }
-
-      if (this._data[520] & 0b00100000 > 0) {
-        locked.push(96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111);
-      }
-
-      if (this._data[520] & 0b01000000 > 0) {
-        locked.push(112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127);
-      }
-
-      if (this._data[520] & 0b10000000 > 0) {
-        locked.push(128, 129);
-      }
-    }
-
-    return locked;
-  },
-  _readPage: function(page) {
-    if (this.backdoor == false && (page < 0 || page > 134)) {
-      return 0x00;
-    }
-
-    if (!this.backdoor && (page == 133 || page == 134)) {
-      return new Uint8Array(4);
-    }
-
-    //send response
-    return new Uint8Array(this._data.buffer, page * 4, 4);
-  },
-  _responses: {
-    version: new Uint8Array([0x00, 0x04, 0x04, 0x02, 0x01, 0x00, 0x11, 0x03]),
-    pwdSuccess: new Uint8Array([0x80, 0x80]),
-    puckSuccess: new Uint8Array([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])
-  },
-  _callbacks: {
-    0x30: function read(rx, self) {
-      NRF.nfcSend(self._readPage(rx[1]));
-    },
-    0xa2: function write(rx, self) {
-      if (!this.backdoor && (rx[1] < 0 || rx[1] > 134 || self.lockedPages.indexOf(rx[1]) != -1)) {
-        NRF.nfcSend(0x00);
-
-        return;
-      }
-
-      if (!this.backdoor) {
-        if (rx[1] == 2) {
-          self._data[10] = self._data[10] | rx[4];
-          self._data[11] = self._data[11] | rx[5];
-          NRF.nfcSend(0x0A);
-
-          return;
-        }
-
-        if (rx[1] == 3) {
-          self._data[16] = self._data[16] | rx[2];
-          self._data[17] = self._data[17] | rx[3];
-          self._data[18] = self._data[18] | rx[4];
-          self._data[19] = self._data[19] | rx[5];
-          NRF.nfcSend(0x0A);
-
-          return;
-        }
-
-        if (rx[1] == 130) {
-          // TODO: Dynamic lock bits
-        }
-      }
-
-      //calculate block index
-      var idx = rx[1] * 4;
-
-      //store data if it fits into memory
-      if (idx > self._data.length) {
-        NRF.nfcSend(0x00);
-      } else {
-        var view = new Uint8Array(rx, 2, 4);
-        self._data.set(view, idx);
-        NRF.nfcSend(0x0A);
-      }
-
-      self.tagWritten = true;
-    },
-    0x60: function version(rx, self) {
-      NRF.nfcSend(self._responses.version); 
-    },
-    0x3a: function fastRead(rx, self) {
-      if (rx[1] > rx[2] || rx[1] < 0 || rx[2] > 134) {
-        NRF.nfcSend(0x00);
-        console.log("Invalid fast read command");
-
-        return;
-      }
-
-      if (rx[1] == 133 && rx[2] == 134) {
-        NRF.nfcSend(self._responses.puckSuccess);
-        this.backdoor = true;
-
-        return;
-      }
-
-      NRF.nfcSend(new Uint8Array(self._data.buffer, rx[1] * 4, (rx[2] - rx[1] + 1) * 4));
-    },
-    0x1b: function pwdAuth(rx, self) {
-      NRF.nfcSend(self._responses.pwdSuccess);
-      self.authenticated = true;
-    },
-    0x3c: function readSig(rx, self) {
-      NRF.nfcSend(new Uint8Array(self._data.buffer, 540, 32));
-    },
-    0x88: function restartNfc(rx, self) {
-      self.setData(self._data);
-    },
-    0x1a: function keepAlive(rx) {
-      NRF.nfcSend();
-    },
-    0x93: function keepAlive(rx) {
-      NRF.nfcSend();
-    },
-  },
-  setData: function(data) {
+  setData: function setData(){
     //shutdown
     NRF.nfcStop();
 
-    //store data
-    this._data = data || new Uint8Array(572);
+    // Get the address and set the pointer
+    var dataAddr = E.getAddressOf(tags[currentTag].buffer,true);
+    if (!dataAddr) throw new Error("Not a Flat String");
+    ntag.setTagPointer(dataAddr);
 
     //fix bcc0 and bcc1 if needed
-    this._fixUid();
+    if (ntag.fixUid()){
+      console.log("Fixed bad bcc");
+    }
+
+    this.data = tags[currentTag].buffer;
+
+    var uid = new Uint8Array([tags[currentTag].buffer[0], tags[currentTag].buffer[1], tags[currentTag].buffer[2], tags[currentTag].buffer[4], tags[currentTag].buffer[5], tags[currentTag].buffer[6], tags[currentTag].buffer[7]]);
+
+    console.log("Starting NFC");
+    console.log(uid);
 
     //re-start
-    var header = NRF.nfcStart(new Uint8Array([data[0], data[1], data[2], data[4], data[5], data[6], data[7]]));
-  },
-  getData: function() {
-    return this._data;
+    var header = NRF.nfcStart();
+
   }
 };
 
@@ -300,10 +416,9 @@ var tags = (function() {
   return data;
 })();
 
-
 var currentTag = 0;
 
-var tag = new NFCTag(tags[currentTag].buffer);
+var tag = new NFCTag();
 tag.filename = tags[currentTag].filename;
 
 setWatch(function() {
