@@ -1,4 +1,4 @@
-<html><head><title>Puck NTAG215 Management</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes"><link href="237c1e787ea1c2304c30.css" rel="stylesheet"></head><body><a class="github-corner" href="https://github.com/DanTheMan827/ntag215-puck.js" aria-label="View source on GitHub" style="      "><svg width="80" height="80" viewbox="0 0 250 250" style="fill: #fff; color: #151513; position: absolute; top: 0; border: 0; right: 0" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path class="octo-arm" d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px"></path><path class="octo-body" d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor"></path></svg></a><div class="container" id="mainContainer"><a class="btn btn-default btn-lg btn-block well" id="puckConnect">Connect to Puck</a><a class="btn btn-default btn-lg btn-block well" id="puckDisconnect">Disconnect from Puck</a><a class="btn btn-default btn-lg btn-block well" id="puckName">Change Name</a><a class="btn btn-default btn-lg btn-block well" id="puckUart">Enable UART</a><div id="readme"><h1>How to use</h1>
+<html><head><title>Puck NTAG215 Management</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes"><link href="3b53ac0c0566d0ab7bce.css" rel="stylesheet"></head><body><a class="github-corner" href="https://github.com/DanTheMan827/ntag215-puck.js" aria-label="View source on GitHub" style="      "><svg width="80" height="80" viewbox="0 0 250 250" style="fill: #fff; color: #151513; position: absolute; top: 0; border: 0; right: 0" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path class="octo-arm" d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px"></path><path class="octo-body" d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor"></path></svg></a><div class="container" id="mainContainer"><a class="btn btn-default btn-lg btn-block well" id="puckConnect">Connect to Puck</a><a class="btn btn-default btn-lg btn-block well" id="puckDisconnect">Disconnect from Puck</a><a class="btn btn-default btn-lg btn-block well" id="puckName">Change Name</a><a class="btn btn-default btn-lg btn-block well" id="puckUart">Enable UART</a><div id="readme"><h1>How to use</h1>
 <p>First you'll need to write <a href="https://raw.githubusercontent.com/DanTheMan827/ntag215-puck.js/master/ntag215.js">this .js file</a> to your puck.js with the <a href="https://www.espruino.com/ide/">Espruino IDE</a>, then after you do that you'll be able to connect with this page by clicking connect to puck.</p>
 <p>If you ever want to put the puck back into programming mode, you can click the enable uart button that appears after connecting.</p>
 <p><strong>Note:</strong> For best compatibility, you'll want to enable code minification, mangle, and pretokenise code before upload in the <a href="https://www.espruino.com/ide/">Espruino IDE</a></p>
@@ -11,7 +11,7 @@
 All sections of code within this repository are licensed under an MIT License:
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
+of this software and associated documentation files (the &quot;Software&quot;), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
@@ -20,7 +20,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -35,20 +35,20 @@ function NFCTag(data) {
   this.backdoor = false;
   this.tagWritten = false;
   this.lockedPages = [];
-  this.filename = "tag.bin";
+  this.filename = &quot;tag.bin&quot;;
   this.callbacks = this._callbacks;
 
   var self = this;
 
-  NRF.on('NFCon', function nfcOn() {
-    if (currentTag < 7) {
-      LED1.write(currentTag + 1 & 1);
-      LED2.write(currentTag + 1 & 2);
-      LED3.write(currentTag + 1 & 4);
+  NRF.on(&#39;NFCon&#39;, function nfcOn() {
+    if (currentTag &lt; 7) {
+      LED1.write(currentTag + 1 &amp; 1);
+      LED2.write(currentTag + 1 &amp; 2);
+      LED3.write(currentTag + 1 &amp; 4);
     }
   });
 
-  NRF.on('NFCoff', function nfcOff() {
+  NRF.on(&#39;NFCoff&#39;, function nfcOff() {
     LED1.write(0);
     LED2.write(0);
     LED3.write(0);
@@ -60,8 +60,8 @@ function NFCTag(data) {
     this.lockedPages = self._getLockedPages();
 
     if (self.tagWritten == true) {
-      console.log("Saving tag to flash");
-      //require("Storage").write(self.filename, this._data);
+      console.log(&quot;Saving tag to flash&quot;);
+      //require(&quot;Storage&quot;).write(self.filename, this._data);
       self.tagWritten = false;
     }
 
@@ -71,8 +71,8 @@ function NFCTag(data) {
     }
   });
 
-  NRF.on('NFCrx', function nfcRx(rx) {
-    if (rx && self.callbacks[rx[0]]) {
+  NRF.on(&#39;NFCrx&#39;, function nfcRx(rx) {
+    if (rx &amp;&amp; self.callbacks[rx[0]]) {
       self.callbacks[rx[0]](rx, self);
     } else {
       NRF.nfcSend(0);
@@ -89,7 +89,7 @@ NFCTag.prototype = {
       this._data[3] = bcc0;
       this._data[8] = bcc1;
 
-      console.log("Fixed bad bcc");
+      console.log(&quot;Fixed bad bcc&quot;);
 
       return true;
     }
@@ -100,12 +100,12 @@ NFCTag.prototype = {
     var locked = [0, 1];
 
     // Static Lock Bytes
-    for (var bit = 0; bit < 8; bit++) {
-      if (this._data[11] & (1 << bit)) {
+    for (var bit = 0; bit &lt; 8; bit++) {
+      if (this._data[11] &amp; (1 &lt;&lt; bit)) {
         locked.push(bit + 8);
       }
 
-      if (this._data[10] & (1 << bit)) {
+      if (this._data[10] &amp; (1 &lt;&lt; bit)) {
         switch (bit) {
           case 0: //BL-CC
           case 1: //BL-9-4
@@ -121,35 +121,35 @@ NFCTag.prototype = {
 
     if (!this.authenticated) {
       // Dynamic Lock Bytes
-      if (this._data[520] & 0b00000001 > 0) {
+      if (this._data[520] &amp; 0b00000001 &gt; 0) {
         locked.push(16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
       }
 
-      if (this._data[520] & 0b00000010 > 0) {
+      if (this._data[520] &amp; 0b00000010 &gt; 0) {
         locked.push(32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47);
       }
 
-      if (this._data[520] & 0b00000100 > 0) {
+      if (this._data[520] &amp; 0b00000100 &gt; 0) {
         locked.push(48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63);
       }
 
-      if (this._data[520] & 0b00001000 > 0) {
+      if (this._data[520] &amp; 0b00001000 &gt; 0) {
         locked.push(64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79);
       }
 
-      if (this._data[520] & 0b00010000 > 0) {
+      if (this._data[520] &amp; 0b00010000 &gt; 0) {
         locked.push(80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95);
       }
 
-      if (this._data[520] & 0b00100000 > 0) {
+      if (this._data[520] &amp; 0b00100000 &gt; 0) {
         locked.push(96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111);
       }
 
-      if (this._data[520] & 0b01000000 > 0) {
+      if (this._data[520] &amp; 0b01000000 &gt; 0) {
         locked.push(112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127);
       }
 
-      if (this._data[520] & 0b10000000 > 0) {
+      if (this._data[520] &amp; 0b10000000 &gt; 0) {
         locked.push(128, 129);
       }
     }
@@ -157,11 +157,11 @@ NFCTag.prototype = {
     return locked;
   },
   _readPage: function(page) {
-    if (this.backdoor == false && (page < 0 || page > 134)) {
+    if (this.backdoor == false &amp;&amp; (page &lt; 0 || page &gt; 134)) {
       return 0x00;
     }
 
-    if (!this.backdoor && (page == 133 || page == 134)) {
+    if (!this.backdoor &amp;&amp; (page == 133 || page == 134)) {
       return new Uint8Array(4);
     }
 
@@ -175,13 +175,13 @@ NFCTag.prototype = {
   },
   _callbacks: {
     type: function() {
-      return "normal";
+      return &quot;normal&quot;;
     },
     0x30: function read(rx, self) {
       NRF.nfcSend(self._readPage(rx[1]));
     },
     0xa2: function write(rx, self) {
-      if (!self.backdoor && (rx[1] < 0 || rx[1] > 134 || self.lockedPages.indexOf(rx[1]) != -1)) {
+      if (!self.backdoor &amp;&amp; (rx[1] &lt; 0 || rx[1] &gt; 134 || self.lockedPages.indexOf(rx[1]) != -1)) {
         NRF.nfcSend(0x00);
 
         return;
@@ -215,7 +215,7 @@ NFCTag.prototype = {
       var idx = rx[1] * 4;
 
       //store data if it fits into memory
-      if (idx > self._data.length) {
+      if (idx &gt; self._data.length) {
         NRF.nfcSend(0x00);
       } else {
         NRF.nfcSend(0x0A);
@@ -228,14 +228,14 @@ NFCTag.prototype = {
       NRF.nfcSend(self._responses.version); 
     },
     0x3a: function fastRead(rx, self) {
-      if (rx[1] > rx[2] || rx[1] < 0 || rx[2] > 134) {
+      if (rx[1] &gt; rx[2] || rx[1] &lt; 0 || rx[2] &gt; 134) {
         NRF.nfcSend(0x00);
-        console.log("Invalid fast read command");
+        console.log(&quot;Invalid fast read command&quot;);
 
         return;
       }
 
-      if (rx[1] == 133 && rx[2] == 134) {
+      if (rx[1] == 133 &amp;&amp; rx[2] == 134) {
         NRF.nfcSend(self._responses.puckSuccess);
         self.backdoor = true;
         self.callbacks = self._unrestrictedCallbacks;
@@ -281,7 +281,7 @@ NFCTag.prototype = {
 };
 NFCTag.prototype._unrestrictedCallbacks = {
   type: function() {
-    return "unrestricted";
+    return &quot;unrestricted&quot;;
   },
   0x30: NFCTag.prototype._callbacks[0x30],
   0xa2: function write(rx, self) {
@@ -299,20 +299,20 @@ NFCTag.prototype._unrestrictedCallbacks = {
   0x93: NFCTag.prototype._callbacks[0x93]
 };
 
-var storage = require("Storage");
+var storage = require(&quot;Storage&quot;);
 var tags = (function() {
   var data = [];
 
-  for (var i = 0; i < 14; i++) {
-    var filename = "tag" + i + ".bin";
+  for (var i = 0; i &lt; 14; i++) {
+    var filename = &quot;tag&quot; + i + &quot;.bin&quot;;
     data.push({});
 
     var buffer = storage.readArrayBuffer(filename);
 
     if (buffer) {
-      console.log("Loaded " + filename);
+      console.log(&quot;Loaded &quot; + filename);
       var output = new Uint8Array(buffer.length);
-      for (var buffPos = 0; buffPos < buffer.length; buffPos++) {
+      for (var buffPos = 0; buffPos &lt; buffer.length; buffPos++) {
         output[buffPos] = buffer[buffPos];
       }
 
@@ -330,7 +330,7 @@ var tags = (function() {
 function getBufferClone(buffer){
   if (buffer) {
     var output = new Uint8Array(buffer.length);
-    for (var buffPos = 0; buffPos < buffer.length; buffPos++) {
+    for (var buffPos = 0; buffPos &lt; buffer.length; buffPos++) {
       output[buffPos] = buffer[buffPos];
     }
 
@@ -362,7 +362,7 @@ setWatch(function() {
   enableUart = true;
   LED1.write(0);
   LED2.write(0);
-}, BTN, { repeat: false, edge: "rising", debounce: 50 });
+}, BTN, { repeat: false, edge: &quot;rising&quot;, debounce: 50 });
 
 setTimeout(function() {
   LED1.write(0);
@@ -370,16 +370,16 @@ setTimeout(function() {
   LED3.write(0);
   clearWatch();
   tag = new NFCTag(tags[currentTag].buffer);
-  tag.filename = "tag" + currentTag + ".bin";
+  tag.filename = &quot;tag&quot; + currentTag + &quot;.bin&quot;;
 
   changeTag = function changeTag(slot){
     NRF.nfcStop();
     currentTag = slot;
 
-    if (currentTag < 7) {
-      LED1.write(currentTag + 1 & 1);
-      LED2.write(currentTag + 1 & 2);
-      LED3.write(currentTag + 1 & 4);
+    if (currentTag &lt; 7) {
+      LED1.write(currentTag + 1 &amp; 1);
+      LED2.write(currentTag + 1 &amp; 2);
+      LED3.write(currentTag + 1 &amp; 4);
     }
 
     setTimeout(function() {
@@ -387,14 +387,14 @@ setTimeout(function() {
       LED2.write(0);
       LED3.write(0);
 
-      tag.filename = "tag" + currentTag + ".bin";
+      tag.filename = &quot;tag&quot; + currentTag + &quot;.bin&quot;;
       tag.setData(tags[slot].buffer);
     }, 200);
   };
 
   setWatch(function() {
-    changeTag(++currentTag >= 7 ? 0 : currentTag);
-  }, BTN, { repeat: true, edge: "rising", debounce: 50 });
+    changeTag(++currentTag &gt;= 7 ? 0 : currentTag);
+  }, BTN, { repeat: true, edge: &quot;rising&quot;, debounce: 50 });
 
   /**
   var tagLayout = [
@@ -414,12 +414,12 @@ setTimeout(function() {
   ];
   */
 
-  NRF.setAdvertising({}, { name: getBufferClone(storage.readArrayBuffer("puck-name")) });
+  NRF.setAdvertising({}, { name: getBufferClone(storage.readArrayBuffer(&quot;puck-name&quot;)) });
   if (!enableUart) {
-    const serviceId = "78290001-d52e-473f-a9f4-f03da7c67dd1";
-    const commandCharacteristic = "78290002-d52e-473f-a9f4-f03da7c67dd1";
-    const returnCharacteristic = "78290003-d52e-473f-a9f4-f03da7c67dd1";
-    const nameCharacteristic = "78290004-d52e-473f-a9f4-f03da7c67dd1";
+    const serviceId = &quot;78290001-d52e-473f-a9f4-f03da7c67dd1&quot;;
+    const commandCharacteristic = &quot;78290002-d52e-473f-a9f4-f03da7c67dd1&quot;;
+    const returnCharacteristic = &quot;78290003-d52e-473f-a9f4-f03da7c67dd1&quot;;
+    const nameCharacteristic = &quot;78290004-d52e-473f-a9f4-f03da7c67dd1&quot;;
 
     var services = { };
     services[serviceId] = {};
@@ -439,7 +439,7 @@ setTimeout(function() {
       writable : true,
       indicate: false,
       onWrite : function(evt) {
-        if (evt.data.length > 0) {
+        if (evt.data.length &gt; 0) {
           var response = {};
           response[serviceId] = {};
           response[serviceId][commandCharacteristic] = {
@@ -451,10 +451,10 @@ setTimeout(function() {
             indicate: false
           };
           switch (evt.data[0]) {
-            case 0x01: (function() {//Slot Information <Slot>
-              if (evt.data.length > 1) {
+            case 0x01: (function() {//Slot Information &lt;Slot&gt;
+              if (evt.data.length &gt; 1) {
                 //Returns a subset of data for identifying
-                var slot = evt.data[1] < tags.length ? evt.data[1] : currentTag;
+                var slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
                 var data = getTagInfo(slot);
                 response[serviceId][returnCharacteristic].value = Uint8Array(data.length + 2);
 
@@ -462,21 +462,21 @@ setTimeout(function() {
                 response[serviceId][returnCharacteristic].value[1] = slot;
                 response[serviceId][returnCharacteristic].value.set(data, 2);
               } else {
-                //Returns 0x01 <Current Slot> <Slot Count>
+                //Returns 0x01 &lt;Current Slot&gt; &lt;Slot Count&gt;
                 response[serviceId][returnCharacteristic].value = [0x01, currentTag, tags.length];
               }
               NRF.updateServices(response);
             })(); break;
 
-            case 0x02: (function() {//Read <Slot> <StartPage> <PageCount>
+            case 0x02: (function() {//Read &lt;Slot&gt; &lt;StartPage&gt; &lt;PageCount&gt;
               //Max pages: 63
-              //Returns 0x02 <Slot> <StartPage> <PageCount> <Data>
+              //Returns 0x02 &lt;Slot&gt; &lt;StartPage&gt; &lt;PageCount&gt; &lt;Data&gt;
               var startIdx = evt.data[2] * 4;
               var dataSize = evt.data[3] * 4;
-              var slot = evt.data[1] < tags.length ? evt.data[1] : currentTag;
+              var slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
               var sourceData = tags[slot].buffer.slice(startIdx, startIdx + dataSize);
-              //console.log("Reading from slot: " + slot);
-              //console.log("Read from " + startIdx + " - " + (startIdx + dataSize));
+              //console.log(&quot;Reading from slot: &quot; + slot);
+              //console.log(&quot;Read from &quot; + startIdx + &quot; - &quot; + (startIdx + dataSize));
               response[serviceId][returnCharacteristic].value = Uint8Array(dataSize + 4);
               response[serviceId][returnCharacteristic].value.set(Uint8Array(evt.data, 0, 4), 0);
               response[serviceId][returnCharacteristic].value[1] = slot;
@@ -484,25 +484,25 @@ setTimeout(function() {
               NRF.updateServices(response);
             })(); break;
 
-            case 0x03: (function() {//Write <Slot> <StartPage> <Data>
+            case 0x03: (function() {//Write &lt;Slot&gt; &lt;StartPage&gt; &lt;Data&gt;
               var startIdx = evt.data[2] * 4;
               var dataSize = evt.data.length - 3;
-              var slot = evt.data[1] < tags.length ? evt.data[1] : currentTag;
+              var slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
 
               //store data if it fits into memory
-              if ((startIdx + dataSize) <= 572) {
-                //console.log("Write to slot: " + slot);
-                //console.log("Write to start: " + startIdx);
-                //console.log("Write size: " + dataSize);
+              if ((startIdx + dataSize) &lt;= 572) {
+                //console.log(&quot;Write to slot: &quot; + slot);
+                //console.log(&quot;Write to start: &quot; + startIdx);
+                //console.log(&quot;Write size: &quot; + dataSize);
 
                 tags[slot].buffer.set(new Uint8Array(evt.data, 3, dataSize), startIdx);
               }
             })(); break;
 
-            case 0xFD: (function() {//Move slot <From> <To>
+            case 0xFD: (function() {//Move slot &lt;From&gt; &lt;To&gt;
               var oldSlot = evt.data[1];
               var newSlot = evt.data[2];
-              if (oldSlot < tags.length && newSlot < tags.length) {
+              if (oldSlot &lt; tags.length &amp;&amp; newSlot &lt; tags.length) {
                 tags.splice(newSlot, 0, tags.splice(oldSlot, 1)[0]);
                 changeTag(currentTag);
               }
@@ -512,9 +512,9 @@ setTimeout(function() {
               NRF.setServices({ }, { uart : true });
             })(); break;
 
-            case 0xFF: (function() {//Restart NFC <Slot?>
-              if (evt.data.length > 1) {
-                changeTag(evt.data[1] >= tags.length ? 0 : evt.data[1]);
+            case 0xFF: (function() {//Restart NFC &lt;Slot?&gt;
+              if (evt.data.length &gt; 1) {
+                changeTag(evt.data[1] &gt;= tags.length ? 0 : evt.data[1]);
               } else {
                 changeTag(currentTag);
               }
@@ -526,21 +526,21 @@ setTimeout(function() {
 
     services[serviceId][nameCharacteristic] = {
       maxLen: 20,
-      value: getBufferClone(storage.readArrayBuffer("puck-name")),
+      value: getBufferClone(storage.readArrayBuffer(&quot;puck-name&quot;)),
       readable : true,
       writable : true,
       indicate: false,
       onWrite : function(evt) {
-        if (evt.data.length > 0) {
-          storage.write("puck-name", evt.data);
+        if (evt.data.length &gt; 0) {
+          storage.write(&quot;puck-name&quot;, evt.data);
         } else {
-          storage.erase("puck-name");
+          storage.erase(&quot;puck-name&quot;);
         }
-        NRF.setAdvertising({}, { name: getBufferClone(storage.readArrayBuffer("puck-name")) });
+        NRF.setAdvertising({}, { name: getBufferClone(storage.readArrayBuffer(&quot;puck-name&quot;)) });
       }
     };
 
     NRF.setServices(services, { uart : false, advertise: [serviceId] });
   }
 }, 5000);
-</textarea></div><div id="slotsContainer"></div></div><script src="237c1e787ea1c2304c30.js"></script></body></html>
+</textarea></div><div id="slotsContainer"></div></div><script src="3b53ac0c0566d0ab7bce.js"></script></body></html>
