@@ -14,6 +14,7 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
 <textarea id="code" readonly="readonly">((BTN, LED1, LED2, LED3, clearTimeout, setTimeout, setWatch, clearWatch, NTAG215, console, Math) =&gt; {
   // Constants
   const SAVE_TO_FLASH = false; // Set this to true if you want to save the tags to flash memory.
+  const FIRMWARE_NAME = &quot;dtm-1.0.1&quot;;
 
   /** @noinline */
   const BLE_SERVICE_ID = &quot;78290001-d52e-473f-a9f4-f03da7c67dd1&quot;;
@@ -26,6 +27,9 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
 
   /** @noinline */
   const BLE_NAME_CHARACTERISTIC = &quot;78290004-d52e-473f-a9f4-f03da7c67dd1&quot;;
+
+  /** @noinline */
+  const BLE_FIRMWARE_CHARACTERISTIC = &quot;78290005-d52e-473f-a9f4-f03da7c67dd1&quot;;
 
   // Modules
   const storage = require(&quot;Storage&quot;);
@@ -359,6 +363,11 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
         }
       };
 
+      services[BLE_SERVICE_ID][BLE_FIRMWARE_CHARACTERISTIC] = {
+        value: FIRMWARE_NAME,
+        readable: true
+      };
+
       NRF.setServices(services, {
         uart: false,
         advertise: [BLE_SERVICE_ID]
@@ -432,4 +441,4 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
 'floating-chat.donateButton.text': 'Support me',
 'floating-chat.donateButton.background-color': '#00b9fe',
 'floating-chat.donateButton.text-color': '#fff'
-});</script><div class="editor--terminal"><div class="editor__canvas"></div></div><script src="ec27c6de4f4f28ec5630.js"></script></body></html>
+});</script><div class="editor--terminal"><div class="editor__canvas"></div></div><script src="b8a965b70b02dfc078fa.js"></script></body></html>
