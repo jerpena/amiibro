@@ -15,6 +15,7 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
   // Constants
   const SAVE_TO_FLASH = false; // Set this to true if you want to save the tags to flash memory.
   const FIRMWARE_NAME = &quot;dtm-1.0.1&quot;;
+  const PUCK_NAME_FILE = &quot;puck-name&quot;;
 
   /** @noinline */
   const BLE_SERVICE_ID = &quot;78290001-d52e-473f-a9f4-f03da7c67dd1&quot;;
@@ -222,7 +223,7 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
     });
 
     NRF.setAdvertising({}, {
-      name: getBufferClone(storage.readArrayBuffer(&quot;puck-name&quot;))
+      name: getBufferClone(storage.readArrayBuffer(PUCK_NAME_FILE))
     });
     if (!enableUart) {
       var services = {};
@@ -347,18 +348,18 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
 
       services[BLE_SERVICE_ID][BLE_NAME_CHARACTERISTIC] = {
         maxLen: 20,
-        value: new Uint8Array(storage.readArrayBuffer(&quot;puck-name&quot;)),
+        value: new Uint8Array(storage.readArrayBuffer(PUCK_NAME_FILE)),
         readable: true,
         writable: true,
         indicate: false,
         onWrite: (evt) =&gt; {
           if (evt.data.length &gt; 0) {
-            storage.write(&quot;puck-name&quot;, evt.data);
+            storage.write(PUCK_NAME_FILE, evt.data);
           } else {
-            storage.erase(&quot;puck-name&quot;);
+            storage.erase(PUCK_NAME_FILE);
           }
           NRF.setAdvertising({}, {
-            name: getBufferClone(storage.readArrayBuffer(&quot;puck-name&quot;))
+            name: getBufferClone(storage.readArrayBuffer(PUCK_NAME_FILE))
           });
         }
       };
@@ -376,8 +377,8 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
   }
 
   if (typeof NTAG215 !== &quot;undefined&quot;) {
-    if (storage.readArrayBuffer(&quot;puck-name&quot;) == undefined) {
-      storage.write(&quot;puck-name&quot;, &quot;Puck.js &quot; + NRF.getAddress().substr(12, 5).split(&quot;:&quot;).join(&quot;&quot;));
+    if (storage.readArrayBuffer(PUCK_NAME_FILE) == undefined) {
+      storage.write(PUCK_NAME_FILE, &quot;Puck.js &quot; + NRF.getAddress().substr(12, 5).split(&quot;:&quot;).join(&quot;&quot;));
     }
 
     NTAG215.setTagBuffer(txBuffer.buffer);
