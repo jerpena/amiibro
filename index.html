@@ -11,155 +11,177 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
 <p>First you'll need to write <a href="https://raw.githubusercontent.com/DanTheMan827/ntag215-puck.js/master/ntag215.js">this .js file</a> to your puck.js with the <a href="https://www.espruino.com/ide/">Espruino IDE</a>, then after you do that you'll be able to connect with this page by clicking connect to puck.</p>
 <p>If you ever want to put the puck back into programming mode, you can click the enable uart button that appears after connecting.</p>
 <p><strong>Note:</strong> For best compatibility, you'll want to enable code minification, mangle, and pretokenise code before upload in the <a href="https://www.espruino.com/ide/">Espruino IDE</a></p>
-<textarea id="code" readonly="readonly">((BTN, LED1, LED2, LED3, clearTimeout, setTimeout, setWatch, clearWatch, NTAG215, console, Math) =&gt; {
-  // Constants
-  const SAVE_TO_FLASH = false; // Set this to true if you want to save the tags to flash memory.
-  const FIRMWARE_NAME = &quot;dtm-1.0.1&quot;;
-  const PUCK_NAME_FILE = &quot;puck-name&quot;;
+<textarea id="code" readonly="readonly">// Constants
+const SAVE_TO_FLASH = false; // Set this to true if you want to save the tags to flash memory.
+const FIRMWARE_NAME = &quot;dtm-1.0.1&quot;;
+const PUCK_NAME_FILE = &quot;puck-name&quot;;
+const BOARD = process.env.BOARD;
+const UART_WINDOW = 5000; // How long in miliseconds during power on in which you can press the button to enable UART.
+const POWER_ON_TIME = 5000; // How many miliseconds you have to hold the button to power on the puck
+const POWER_OFF_TIME = 5000 ;// How many miliseconds you have to hold the button to power off the puck
 
-  /** @noinline */
-  const BLE_SERVICE_ID = &quot;78290001-d52e-473f-a9f4-f03da7c67dd1&quot;;
+// Bluetooth GUIDs
+const BLE_SERVICE_ID = &quot;78290001-d52e-473f-a9f4-f03da7c67dd1&quot;;
+const BLE_COMMAND_CHARACTERISTIC = &quot;78290002-d52e-473f-a9f4-f03da7c67dd1&quot;;
+const BLE_RETURN_CHARACTERISTIC = &quot;78290003-d52e-473f-a9f4-f03da7c67dd1&quot;;
+const BLE_NAME_CHARACTERISTIC = &quot;78290004-d52e-473f-a9f4-f03da7c67dd1&quot;;
+const BLE_FIRMWARE_CHARACTERISTIC = &quot;78290005-d52e-473f-a9f4-f03da7c67dd1&quot;;
 
-  /** @noinline */
-  const BLE_COMMAND_CHARACTERISTIC = &quot;78290002-d52e-473f-a9f4-f03da7c67dd1&quot;;
+// Modules
+const storage = require(&quot;Storage&quot;);
 
-  /** @noinline */
-  const BLE_RETURN_CHARACTERISTIC = &quot;78290003-d52e-473f-a9f4-f03da7c67dd1&quot;;
+// Mangle Helper
+const _BTN = this.BTN;
+const _LED1 = this.LED1;
+const _LED2 = this.LED2;
+const _LED3 = this.LED3;
+const _NTAG215 = this.NTAG215;
+const _clearTimeout = clearTimeout;
+const _setTimeout = setTimeout;
+const _setWatch = setWatch;
+const _clearWatch = clearWatch;
+const _consoleLog = console.log;
+const _Math = Math;
+const _MathRound = _Math.round;
+const _MathRandom = _Math.random;
+const _Rising = &quot;rising&quot;;
+const _Falling = &quot;falling&quot;;
 
-  /** @noinline */
-  const BLE_NAME_CHARACTERISTIC = &quot;78290004-d52e-473f-a9f4-f03da7c67dd1&quot;;
+// Features
+const ENABLE_LEDS = BOARD == &quot;PUCKJS&quot;;
 
-  /** @noinline */
-  const BLE_FIRMWARE_CHARACTERISTIC = &quot;78290005-d52e-473f-a9f4-f03da7c67dd1&quot;;
+// Variables
+var currentTag = 0;
+var changeTagTimeout = null;
+var enableUart = false;
+var txBuffer = new Uint8Array(32);
+var tags = [];
 
-  // Modules
-  const storage = require(&quot;Storage&quot;);
+while (tags.length &lt; 50 &amp;&amp; process.memory().free &gt; 1024) {
+  tags.push(new Uint8Array(572));
+}
 
-  // Variables
-  var currentTag = 0;
-  var changeTagTimeout = null;
-  var enableUart = false;
-  var txBuffer = new Uint8Array(32);
-  var tags = [];
+_consoleLog(&quot;Tag count: &quot; + tags.length);
 
-  while (tags.length &lt; 50 &amp;&amp; process.memory().free &gt; 1024) {
-    tags.push(new Uint8Array(572));
+function fixUid() {
+  if (tags[currentTag][0] == 0x04 &amp;&amp; tags[currentTag][9] == 0x48 &amp;&amp; _NTAG215.fixUid()) {
+    _consoleLog(&quot;Fixed UID&quot;);
+    return true;
   }
 
-  console.log(&quot;Tag count: &quot; + tags.length);
+  return false;
+}
 
-  function fixUid() {
-    if (tags[currentTag][0] == 0x04 &amp;&amp; tags[currentTag][9] == 0x48 &amp;&amp; NTAG215.fixUid()) {
-      console.log(&quot;Fixed UID&quot;);
-      return true;
+function getTagInfo(slot) {
+  var output = Uint8Array(80);
+  output.set(tags[slot].slice(0, 8), 0);
+  output.set(tags[slot].slice(16, 24), 8);
+  output.set(tags[slot].slice(32, 52), 20);
+  output.set(tags[slot].slice(84, 92), 40);
+  output.set(tags[slot].slice(96, 128), 48);
+
+  return output;
+}
+
+function changeTag(slot, noDelay) {
+  &quot;changeTag&quot;;
+  if (changeTagTimeout) {
+    _clearTimeout(changeTagTimeout);
+    changeTagTimeout = null;
+  }
+
+  _NTAG215.nfcStop();
+
+  currentTag = slot;
+
+  if (ENABLE_LEDS &amp;&amp; currentTag &lt; 7) {
+    _LED1.write(currentTag + 1 &amp; 1);
+    _LED2.write(currentTag + 1 &amp; 2);
+    _LED3.write(currentTag + 1 &amp; 4);
+  }
+
+  function innerChangeTag() {
+    if (ENABLE_LEDS) {
+      _LED1.write(0);
+      _LED2.write(0);
+      _LED3.write(0);
     }
 
-    return false;
+    _NTAG215.setTagData(tags[slot].buffer);
+    fixUid();
+    _NTAG215.nfcStart();
   }
 
-  function getTagInfo(slot) {
-    var output = Uint8Array(80);
-    output.set(tags[slot].slice(0, 8), 0);
-    output.set(tags[slot].slice(16, 24), 8);
-    output.set(tags[slot].slice(32, 52), 20);
-    output.set(tags[slot].slice(84, 92), 40);
-    output.set(tags[slot].slice(96, 128), 48);
+  if (noDelay) {
+    innerChangeTag();
+  } else {
+    changeTagTimeout = _setTimeout(innerChangeTag, 200);
+  }
+}
+
+function cycleTags() {
+  changeTag(++currentTag &gt;= 7 ? 0 : currentTag);
+}
+
+function getBufferClone(buffer) {
+  if (buffer) {
+    var output = new Uint8Array(buffer.length);
+    output.set(buffer);
 
     return output;
   }
+}
 
-  function changeTag(slot, noDelay) {
-    if (changeTagTimeout) {
-      clearTimeout(changeTagTimeout);
-      changeTagTimeout = null;
-    }
-
-    NTAG215.nfcStop();
-
-    currentTag = slot;
-
-    if (currentTag &lt; 7) {
-      LED1.write(currentTag + 1 &amp; 1);
-      LED2.write(currentTag + 1 &amp; 2);
-      LED3.write(currentTag + 1 &amp; 4);
-    }
-
-    function innerChangeTag() {
-      LED1.write(0);
-      LED2.write(0);
-      LED3.write(0);
-
-      NTAG215.setTagData(tags[slot].buffer);
-      fixUid();
-      NTAG215.nfcStart();
-    }
-
-    if (noDelay) {
-      innerChangeTag();
-    } else {
-      changeTagTimeout = setTimeout(innerChangeTag, 200);
-    }
+function saveTag(slot) {
+  if (slot == undefined) {
+    slot = currentTag;
   }
 
-  function cycleTags() {
-    changeTag(++currentTag &gt;= 7 ? 0 : currentTag);
+  if (slot &lt; 0 || slot &gt;= tags.length) {
+    return;
   }
 
-  function getBufferClone(buffer) {
-    if (buffer) {
-      var output = new Uint8Array(buffer.length);
-      output.set(buffer);
+  _consoleLog(&quot;Saving tag &quot; + slot);
+  storage.write(&quot;tag&quot; + slot + &quot;.bin&quot;, tags[slot]);
+}
 
-      return output;
-    }
+function saveAllTags() {
+  for (var i = 0; i &lt; tags.length; i++) {
+    saveTag(i);
+  }
+}
+
+function setUartWatch() {
+  NRF.setServices({}, {
+    uart: true
+  });
+
+  enableUart = false;
+
+  if (ENABLE_LEDS) {
+    _LED1.write(1);
+    _LED2.write(1);
+    _LED3.write(1);
   }
 
-  function saveTag(slot) {
-    if (slot == undefined) {
-      slot = currentTag;
+  _setWatch(() =&gt; {
+    enableUart = true;
+
+    if (ENABLE_LEDS) {
+      _LED1.write(0);
+      _LED2.write(0);
     }
+  }, _BTN, {
+    repeat: false,
+    edge: _Rising,
+    debounce: 50
+  });
 
-    if (slot &lt; 0 || slot &gt;= tags.length) {
-      return;
-    }
+  _setTimeout(initialize, UART_WINDOW);
+}
 
-    if (SAVE_TO_FLASH) {
-      console.log(&quot;Saving tag &quot; + slot);
-      storage.write(&quot;tag&quot; + slot + &quot;.bin&quot;, tags[slot]);
-    }
-  }
-
-  function saveAllTags() {
-    for (var i = 0; i &lt; tags.length; i++) {
-      saveTag(i);
-    }
-  }
-
-  function setUartWatch() {
-    NRF.setServices({}, {
-      uart: true
-    });
-
-    enableUart = false;
-
-    LED1.write(1);
-    LED2.write(1);
-    LED3.write(1);
-
-    setWatch(() =&gt; {
-      enableUart = true;
-      LED1.write(0);
-      LED2.write(0);
-    }, BTN, {
-      repeat: false,
-      edge: &quot;rising&quot;,
-      debounce: 50
-    });
-
-    setTimeout(initialize, 5000);
-  }
-
-  function flashLed(led, interval, times, callback) {
+function flashLed(led, interval, times, callback) {
+  if (ENABLE_LEDS) {
     if (times &lt; 1) {
       if (callback) {
         return callback();
@@ -170,276 +192,301 @@ gtag('config', 'UA-50411-3');</script><link href="dbfbe99a818232906db9.css" rel=
 
     led.write(1);
 
-    setTimeout(() =&gt; {
+    _setTimeout(() =&gt; {
       led.write(0);
 
-      setTimeout(() =&gt; {
+      _setTimeout(() =&gt; {
         flashLed(led, interval, times - 1, callback);
       }, interval);
     }, interval);
+  } else {
+    // No LEDs, run the callback immediately.
+    if (callback) {
+      return callback();
+    } else {
+      return;
+    }
   }
+}
 
-  function powerOn() {
-    flashLed(LED2, 150, 2, () =&gt; {
+function powerOn() {
+  if (ENABLE_LEDS) {
+    flashLed(_LED2, 150, 2, () =&gt; {
       NRF.wake();
       setUartWatch();
     });
+  } else {
+    NRF.wake();
+    setUartWatch()
+  }
+}
+
+function setInitWatch() {
+  _setWatch(powerOn, _BTN, {
+    repeat: false,
+    edge: _Rising,
+    debounce: POWER_ON_TIME
+  });
+}
+
+function powerOff() {
+  _clearWatch();
+  setInitWatch();
+  NRF.sleep();
+  _NTAG215.nfcStop();
+  if (ENABLE_LEDS) {
+    flashLed(_LED1, 150, 2);
+  }
+}
+
+function initialize() {
+  if (ENABLE_LEDS) {
+    _LED1.write(0);
+    _LED2.write(0);
+    _LED3.write(0);
   }
 
-  function setInitWatch() {
-    setWatch(powerOn, BTN, {
-      repeat: false,
-      edge: &quot;rising&quot;,
-      debounce: 5000
-    });
-  }
+  _clearWatch();
 
-  function powerOff() {
-    clearWatch();
-    setInitWatch();
-    NRF.sleep();
-    NTAG215.nfcStop();
-    flashLed(LED1, 150, 2);
-  }
+  changeTag(currentTag, true);
 
-  function initialize() {
-    LED1.write(0);
-    LED2.write(0);
-    LED3.write(0);
-    clearWatch();
+  _setWatch(powerOff, _BTN, {
+    repeat: false,
+    edge: _Rising,
+    debounce: POWER_OFF_TIME
+  });
 
-    changeTag(currentTag, true);
+  _setWatch(cycleTags, _BTN, {
+    repeat: true,
+    edge: _Falling,
+    debounce: 50
+  });
 
-    setWatch(powerOff, BTN, {
-      repeat: false,
-      edge: &quot;rising&quot;,
-      debounce: 5000
-    });
+  NRF.setAdvertising({}, {
+    name: getBufferClone(storage.readArrayBuffer(PUCK_NAME_FILE))
+  });
+  if (!enableUart) {
+    var services = {};
+    var response = {};
+    response[BLE_SERVICE_ID] = {};
+    response[BLE_SERVICE_ID][BLE_COMMAND_CHARACTERISTIC] = {
+      value: [],
+      indicate: false
+    };
+    response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC] = {
+      value: [],
+      indicate: false
+    };
 
-    setWatch(cycleTags, BTN, {
-      repeat: true,
-      edge: &quot;falling&quot;,
-      debounce: 50
-    });
+    services[BLE_SERVICE_ID] = {};
 
-    NRF.setAdvertising({}, {
-      name: getBufferClone(storage.readArrayBuffer(PUCK_NAME_FILE))
-    });
-    if (!enableUart) {
-      var services = {};
-      var response = {};
-      response[BLE_SERVICE_ID] = {};
-      response[BLE_SERVICE_ID][BLE_COMMAND_CHARACTERISTIC] = {
-        value: [],
-        indicate: false
-      };
-      response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC] = {
-        value: [],
-        indicate: false
-      };
+    services[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC] = {
+      maxLen: 260,
+      value: [],
+      readable: true,
+      writable: false,
+      indicate: false
+    };
 
-      services[BLE_SERVICE_ID] = {};
+    services[BLE_SERVICE_ID][BLE_COMMAND_CHARACTERISTIC] = {
+      maxLen: 20,
+      value: [],
+      readable: true,
+      writable: true,
+      indicate: false,
+      onWrite: (evt) =&gt; {
+        var slot,
+          startIdx,
+          dataSize,
+          sourceData,
+          oldSlot,
+          newSlot;
 
-      services[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC] = {
-        maxLen: 260,
-        value: [],
-        readable: true,
-        writable: false,
-        indicate: false
-      };
-
-      services[BLE_SERVICE_ID][BLE_COMMAND_CHARACTERISTIC] = {
-        maxLen: 20,
-        value: [],
-        readable: true,
-        writable: true,
-        indicate: false,
-        onWrite: (evt) =&gt; {
-          var slot,
-            startIdx,
-            dataSize,
-            sourceData,
-            oldSlot,
-            newSlot;
-
-          if (evt.data.length &gt; 0) {
-            response[BLE_SERVICE_ID][BLE_COMMAND_CHARACTERISTIC].value = evt.data;
-            switch (evt.data[0]) {
-              case 0x01: //Slot Information &lt;Slot&gt;
-                if (evt.data.length &gt; 1) {
-                  //Returns a subset of data for identifying
-                  slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
-                  var data = getTagInfo(slot);
-                  response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value = Uint8Array(data.length + 2);
-
-                  response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value.set(Uint8Array(evt.data, 0, 2), 0);
-                  response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value[1] = slot;
-                  response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value.set(data, 2);
-                } else {
-                  //Returns 0x01 &lt;Current Slot&gt; &lt;Slot Count&gt;
-                  response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value = [0x01, currentTag, tags.length];
-                }
-                NRF.updateServices(response);
-                break;
-
-              case 0x02: //Read &lt;Slot&gt; &lt;StartPage&gt; &lt;PageCount&gt;
-                //Max pages: 63
-                //Returns 0x02 &lt;Slot&gt; &lt;StartPage&gt; &lt;PageCount&gt; &lt;Data&gt;
-                startIdx = evt.data[2] * 4;
-                dataSize = evt.data[3] * 4;
+        if (evt.data.length &gt; 0) {
+          response[BLE_SERVICE_ID][BLE_COMMAND_CHARACTERISTIC].value = evt.data;
+          switch (evt.data[0]) {
+            case 0x01: //Slot Information &lt;Slot&gt;
+              if (evt.data.length &gt; 1) {
+                //Returns a subset of data for identifying
                 slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
-                sourceData = tags[slot].slice(startIdx, startIdx + dataSize);
-                //console.log(&quot;Reading from slot: &quot; + slot);
-                //console.log(&quot;Read from &quot; + startIdx + &quot; - &quot; + (startIdx + dataSize));
-                response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value = Uint8Array(dataSize + 4);
-                response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value.set(Uint8Array(evt.data, 0, 4), 0);
+                var data = getTagInfo(slot);
+                response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value = Uint8Array(data.length + 2);
+
+                response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value.set(Uint8Array(evt.data, 0, 2), 0);
                 response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value[1] = slot;
-                response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value.set(sourceData, 4);
-                NRF.updateServices(response);
-                break;
+                response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value.set(data, 2);
+              } else {
+                //Returns 0x01 &lt;Current Slot&gt; &lt;Slot Count&gt;
+                response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value = [0x01, currentTag, tags.length];
+              }
+              NRF.updateServices(response);
+              break;
 
-              case 0x03: //Write &lt;Slot&gt; &lt;StartPage&gt; &lt;Data&gt;
-                startIdx = evt.data[2] * 4;
-                dataSize = evt.data.length - 3;
-                slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
+            case 0x02: //Read &lt;Slot&gt; &lt;StartPage&gt; &lt;PageCount&gt;
+              //Max pages: 63
+              //Returns 0x02 &lt;Slot&gt; &lt;StartPage&gt; &lt;PageCount&gt; &lt;Data&gt;
+              startIdx = evt.data[2] * 4;
+              dataSize = evt.data[3] * 4;
+              slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
+              sourceData = tags[slot].slice(startIdx, startIdx + dataSize);
+              //_consoleLog(&quot;Reading from slot: &quot; + slot);
+              //_consoleLog(&quot;Read from &quot; + startIdx + &quot; - &quot; + (startIdx + dataSize));
+              response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value = Uint8Array(dataSize + 4);
+              response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value.set(Uint8Array(evt.data, 0, 4), 0);
+              response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value[1] = slot;
+              response[BLE_SERVICE_ID][BLE_RETURN_CHARACTERISTIC].value.set(sourceData, 4);
+              NRF.updateServices(response);
+              break;
 
-                //store data if it fits into memory
-                if ((startIdx + dataSize) &lt;= 572) {
-                  //console.log(&quot;Write to slot: &quot; + slot);
-                  //console.log(&quot;Write to start: &quot; + startIdx);
-                  //console.log(&quot;Write size: &quot; + dataSize);
+            case 0x03: //Write &lt;Slot&gt; &lt;StartPage&gt; &lt;Data&gt;
+              startIdx = evt.data[2] * 4;
+              dataSize = evt.data.length - 3;
+              slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
 
-                  tags[slot].set(new Uint8Array(evt.data, 3, dataSize), startIdx);
-                }
-                break;
+              //store data if it fits into memory
+              if ((startIdx + dataSize) &lt;= 572) {
+                //_consoleLog(&quot;Write to slot: &quot; + slot);
+                //_consoleLog(&quot;Write to start: &quot; + startIdx);
+                //_consoleLog(&quot;Write size: &quot; + dataSize);
 
-              case 0x04: //Save &lt;Slot&gt;
+                tags[slot].set(new Uint8Array(evt.data, 3, dataSize), startIdx);
+              }
+              break;
+
+            case 0x04: //Save &lt;Slot&gt;
+              if (SAVE_TO_FLASH) {
                 slot = evt.data[1] &lt; tags.length ? evt.data[1] : currentTag;
 
                 saveTag(slot);
-                break;
+              }
+              break;
 
-              case 0xFD: //Move slot &lt;From&gt; &lt;To&gt;
-                oldSlot = evt.data[1];
-                newSlot = evt.data[2];
-                if (oldSlot &lt; tags.length &amp;&amp; newSlot &lt; tags.length) {
-                  tags.splice(newSlot, 0, tags.splice(oldSlot, 1)[0]);
-                  changeTag(currentTag);
-                }
-                break;
+            case 0xFD: //Move slot &lt;From&gt; &lt;To&gt;
+              oldSlot = evt.data[1];
+              newSlot = evt.data[2];
+              if (oldSlot &lt; tags.length &amp;&amp; newSlot &lt; tags.length) {
+                tags.splice(newSlot, 0, tags.splice(oldSlot, 1)[0]);
+                changeTag(currentTag);
+              }
+              break;
 
-              case 0xFE: //Enable BLE UART
-                NRF.setServices({}, {
-                  uart: true
-                });
-                break;
+            case 0xFE: //Enable BLE UART
+              NRF.setServices({}, {
+                uart: true
+              });
+              break;
 
-              case 0xFF: //Restart NFC &lt;Slot?&gt;
-                if (evt.data.length &gt; 1) {
-                  changeTag(evt.data[1] &gt;= tags.length ? 0 : evt.data[1]);
-                } else {
-                  changeTag(currentTag);
-                }
-                break;
-            }
+            case 0xFF: //Restart NFC &lt;Slot?&gt;
+              if (evt.data.length &gt; 1) {
+                changeTag(evt.data[1] &gt;= tags.length ? 0 : evt.data[1]);
+              } else {
+                changeTag(currentTag);
+              }
+              break;
           }
         }
-      };
+      }
+    };
 
-      services[BLE_SERVICE_ID][BLE_NAME_CHARACTERISTIC] = {
-        maxLen: 20,
-        value: new Uint8Array(storage.readArrayBuffer(PUCK_NAME_FILE)),
-        readable: true,
-        writable: true,
-        indicate: false,
-        onWrite: (evt) =&gt; {
-          if (evt.data.length &gt; 0) {
-            storage.write(PUCK_NAME_FILE, evt.data);
-          } else {
-            storage.erase(PUCK_NAME_FILE);
-          }
-          NRF.setAdvertising({}, {
-            name: getBufferClone(storage.readArrayBuffer(PUCK_NAME_FILE))
-          });
+    services[BLE_SERVICE_ID][BLE_NAME_CHARACTERISTIC] = {
+      maxLen: 20,
+      value: new Uint8Array(storage.readArrayBuffer(PUCK_NAME_FILE)),
+      readable: true,
+      writable: true,
+      indicate: false,
+      onWrite: (evt) =&gt; {
+        if (evt.data.length &gt; 0) {
+          storage.write(PUCK_NAME_FILE, evt.data);
+        } else {
+          storage.erase(PUCK_NAME_FILE);
         }
-      };
+        NRF.setAdvertising({}, {
+          name: getBufferClone(storage.readArrayBuffer(PUCK_NAME_FILE))
+        });
+      }
+    };
 
-      services[BLE_SERVICE_ID][BLE_FIRMWARE_CHARACTERISTIC] = {
-        value: FIRMWARE_NAME,
-        readable: true
-      };
+    services[BLE_SERVICE_ID][BLE_FIRMWARE_CHARACTERISTIC] = {
+      value: FIRMWARE_NAME,
+      readable: true
+    };
 
-      NRF.setServices(services, {
-        uart: false,
-        advertise: [BLE_SERVICE_ID]
-      });
-    }
+    NRF.setServices(services, {
+      uart: false,
+      advertise: [BLE_SERVICE_ID]
+    });
+  }
+}
+
+if (typeof _NTAG215 !== &quot;undefined&quot;) {
+  if (storage.readArrayBuffer(PUCK_NAME_FILE) == undefined) {
+    storage.write(PUCK_NAME_FILE, &quot;Puck.js &quot; + NRF.getAddress().substr(12, 5).split(&quot;:&quot;).join(&quot;&quot;));
   }
 
-  if (typeof NTAG215 !== &quot;undefined&quot;) {
-    if (storage.readArrayBuffer(PUCK_NAME_FILE) == undefined) {
-      storage.write(PUCK_NAME_FILE, &quot;Puck.js &quot; + NRF.getAddress().substr(12, 5).split(&quot;:&quot;).join(&quot;&quot;));
+  _NTAG215.setTagBuffer(txBuffer.buffer);
+  E.on(&quot;kill&quot;, _NTAG215.nfcStop);
+
+  NRF.on(&#39;NFCon&#39;, function nfcOn() {
+    if (ENABLE_LEDS &amp;&amp; currentTag &lt; 7) {
+      _LED1.write(currentTag + 1 &amp; 1);
+      _LED2.write(currentTag + 1 &amp; 2);
+      _LED3.write(currentTag + 1 &amp; 4);
+    }
+  });
+
+  NRF.on(&#39;NFCoff&#39;, function nfcOff() {
+    if (ENABLE_LEDS) {
+      _LED1.write(0);
+      _LED2.write(0);
+      _LED3.write(0);
     }
 
-    NTAG215.setTagBuffer(txBuffer.buffer);
-    E.on(&quot;kill&quot;, NTAG215.nfcStop);
+    if (fixUid()) {
+      _NTAG215.nfcRestart();
+    }
 
-    NRF.on(&#39;NFCon&#39;, function nfcOn() {
-      if (currentTag &lt; 7) {
-        LED1.write(currentTag + 1 &amp; 1);
-        LED2.write(currentTag + 1 &amp; 2);
-        LED3.write(currentTag + 1 &amp; 4);
-      }
-    });
-
-    NRF.on(&#39;NFCoff&#39;, function nfcOff() {
-      LED1.write(0);
-      LED2.write(0);
-      LED3.write(0);
-
-      if (fixUid()) {
-        NTAG215.nfcRestart();
-      }
-
-      if (NTAG215.getTagWritten()) {
-        console.log(&quot;Saving tag to flash&quot;);
+    if (_NTAG215.getTagWritten()) {
+      if (SAVE_TO_FLASH) {
+        _consoleLog(&quot;Saving tag to flash&quot;);
         saveTag();
-        NTAG215.setTagWritten(false);
       }
-    });
-
-    for (var i = 0; i &lt; tags.length; i++) {
-      var filename = &quot;tag&quot; + i + &quot;.bin&quot;;
-      var buffer = storage.readArrayBuffer(filename);
-
-      if (buffer) {
-        console.log(&quot;Loaded &quot; + filename);
-        tags[i].set(buffer);
-      } else {
-        tags[i][0] = 0x04;
-        tags[i][1] = Math.round(Math.random() * 255);
-        tags[i][2] = Math.round(Math.random() * 255);
-        tags[i][3] = tags[i][0] ^ tags[i][1] ^ tags[i][2] ^ 0x88;
-        tags[i][4] = Math.round(Math.random() * 255);
-        tags[i][5] = Math.round(Math.random() * 255);
-        tags[i][6] = Math.round(Math.random() * 255);
-        tags[i][7] = Math.round(Math.random() * 255);
-        tags[i][8] = tags[i][4] ^ tags[i][5] ^ tags[i][6] ^ tags[i][7];
-
-        tags[i].set([0x48, 0x00, 0x00, 0xE1, 0x10, 0x3E, 0x00, 0x03, 0x00, 0xFE], 0x09);
-        tags[i].set([0xBD, 0x04, 0x00, 0x00, 0xFF, 0x00, 0x05], 0x20B);
-      }
+      _NTAG215.setTagWritten(false);
     }
+  });
 
-    setUartWatch();
-  } else {
-    // We don&#39;t have the custom firmware needed.
-    LED1.write(1);
+  for (var i = 0; i &lt; tags.length; i++) {
+    var filename = &quot;tag&quot; + i + &quot;.bin&quot;;
+    var buffer = storage.readArrayBuffer(filename);
+
+    if (buffer) {
+      _consoleLog(&quot;Loaded &quot; + filename);
+      tags[i].set(buffer);
+    } else {
+      tags[i][0] = 0x04;
+      tags[i][1] = _MathRound(_MathRandom() * 255);
+      tags[i][2] = _MathRound(_MathRandom() * 255);
+      tags[i][3] = tags[i][0] ^ tags[i][1] ^ tags[i][2] ^ 0x88;
+      tags[i][4] = _MathRound(_MathRandom() * 255);
+      tags[i][5] = _MathRound(_MathRandom() * 255);
+      tags[i][6] = _MathRound(_MathRandom() * 255);
+      tags[i][7] = _MathRound(_MathRandom() * 255);
+      tags[i][8] = tags[i][4] ^ tags[i][5] ^ tags[i][6] ^ tags[i][7];
+
+      tags[i].set([0x48, 0x00, 0x00, 0xE1, 0x10, 0x3E, 0x00, 0x03, 0x00, 0xFE], 0x09);
+      tags[i].set([0xBD, 0x04, 0x00, 0x00, 0xFF, 0x00, 0x05], 0x20B);
+    }
   }
-})(this.BTN, this.LED1, this.LED2, this.LED3, clearTimeout, setTimeout, setWatch, clearWatch, this.NTAG215, console, Math);
+
+  setUartWatch();
+} else {
+  // We don&#39;t have the custom firmware needed.
+  if (ENABLE_LEDS) {
+    _LED1.write(1);
+  }
+}
 </textarea></div><div id="slotsContainer"></div><!--include ./adsense.pug--></div><script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"></script><script>kofiWidgetOverlay.draw('dantheman827', {
 'type': 'floating-chat',
 'floating-chat.donateButton.text': 'Support me',
 'floating-chat.donateButton.background-color': '#00b9fe',
 'floating-chat.donateButton.text-color': '#fff'
-});</script><div class="editor--terminal"><div class="editor__canvas"></div></div><script src="b0ba1de546b49a4775e3.js"></script></body></html>
+});</script><div class="editor--terminal"><div class="editor__canvas"></div></div><script src="4196e55587f6c87c8e58.js"></script></body></html>
